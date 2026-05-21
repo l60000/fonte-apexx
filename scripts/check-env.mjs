@@ -32,20 +32,29 @@ function loadEnvFile(path) {
 }
 
 const env = loadEnvFile(envPath)
+const hasEnvFile = existsSync(envPath)
+
+// Verifica se as variáveis estão disponíveis (arquivo .env.local OU process.env)
 const missing = required.filter((key) => {
   const v = env[key] || process.env[key]
   return !v || v.includes("COLE_AQUI")
 })
 
-if (!existsSync(envPath)) {
-  console.error("\n❌ Arquivo .env.local não encontrado.")
-  console.error("   Copie:  copy .env.example .env.local")
-  console.error("   Preencha as chaves do Supabase e rode npm run dev de novo.\n")
-  process.exit(1)
+// Se não tem arquivo .env.local E também não tem variáveis no process.env, erro
+if (!hasEnvFile && missing.length > 0) {
+  // Verifica se está rodando em ambiente com variáveis injetadas (v0, Vercel, etc)
+  const hasAnyEnvVar = required.some((key) => process.env[key])
+  
+  if (!hasAnyEnvVar) {
+    console.error("\n❌ Arquivo .env.local não encontrado.")
+    console.error("   Copie:  copy .env.example .env.local")
+    console.error("   Preencha as chaves do Supabase e rode npm run dev de novo.\n")
+    process.exit(1)
+  }
 }
 
 if (missing.length > 0) {
-  console.error("\n❌ Variáveis ausentes ou ainda com placeholder em .env.local:")
+  console.error("\n❌ Variáveis ausentes ou ainda com placeholder:")
   for (const key of missing) console.error(`   - ${key}`)
   console.error(
     "\n   Supabase → Project Settings → API → anon public + service_role\n",
@@ -53,4 +62,5 @@ if (missing.length > 0) {
   process.exit(1)
 }
 
-console.log("✓ Variáveis do Supabase OK (.env.local)")
+const source = hasEnvFile ? ".env.local" : "environment"
+console.log(`✓ Variáveis do Supabase OK (${source})`)
