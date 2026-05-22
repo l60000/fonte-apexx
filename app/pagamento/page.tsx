@@ -2,6 +2,8 @@ import { Suspense } from "react"
 import PagamentoClient from "./pagamento-client"
 import { Loader2 } from "lucide-react"
 
+export const dynamic = 'force-dynamic'
+
 function LoadingFallback() {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center">
