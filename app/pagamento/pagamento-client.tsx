@@ -1,6 +1,7 @@
 "use client"
 
 import { motion } from "framer-motion"
+
 import {
   ArrowLeft,
   Check,
@@ -26,7 +27,7 @@ import Link from "next/link"
 
 import { createClient } from "@/lib/supabase/client"
 
-import { useRouter, useSearchParams } from "next/navigation"
+import { useRouter } from "next/navigation"
 
 import { useEffect, useState } from "react"
 
@@ -39,10 +40,12 @@ const features = [
   "Suporte direto com o instrutor",
 ]
 
-export default function PagamentoClient() {
+export default function PagamentoClient({
+  courseId,
+}: {
+  courseId: string | null
+}) {
   const router = useRouter()
-
-  const searchParams = useSearchParams()
 
   const { toast } = useToast()
 
@@ -57,8 +60,6 @@ export default function PagamentoClient() {
   const [loading, setLoading] = useState(true)
 
   const [processing, setProcessing] = useState(false)
-
-  const courseId = searchParams.get("courseId")
 
   useEffect(() => {
     const loadData = async () => {
