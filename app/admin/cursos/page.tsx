@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { upload } from "@vercel/blob/client"
 import { createClient } from "@/lib/supabase/client"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -105,33 +106,34 @@ export default function AdminCursosPage() {
       let pdfUrl = editingCourse?.pdf_url || null
       let imageUrl = editingCourse?.image_url || null
 
-      // Upload PDF via server route (handles Blob token server-side)
+      // Upload PDF via client-side upload (supports large files up to 500MB)
       if (pdfFile) {
         console.log("[v0] Uploading PDF:", pdfFile.name, "Size:", pdfFile.size, "bytes")
-        const fd = new FormData()
-        fd.append("file", pdfFile)
-        const res = await fetch("/api/upload-pdf", { method: "POST", body: fd })
-        if (!res.ok) {
-          const txt = await res.text()
-          throw new Error(`Erro ao fazer upload do PDF: ${txt}`)
-        }
-        const data = await res.json()
-        pdfUrl = data.url
+        
+        // Clean filename for better compatibility
+        const cleanFileName = pdfFile.name.replace(/[^a-zA-Z0-9.-]/g, '_')
+        
+        const blob = await upload(`course-pdfs/${cleanFileName}`, pdfFile, {
+          access: 'public',
+          handleUploadUrl: '/api/upload-pdf/token',
+        })
+        
+        pdfUrl = blob.url
         console.log("[v0] PDF uploaded:", pdfUrl)
       }
 
-      // Upload image via server route
+      // Upload image via client-side upload
       if (imageFile) {
         console.log("[v0] Uploading image:", imageFile.name)
-        const fd = new FormData()
-        fd.append("file", imageFile)
-        const res = await fetch("/api/upload-pdf", { method: "POST", body: fd })
-        if (!res.ok) {
-          const txt = await res.text()
-          throw new Error(`Erro ao fazer upload da imagem: ${txt}`)
-        }
-        const data = await res.json()
-        imageUrl = data.url
+        
+        const cleanFileName = imageFile.name.replace(/[^a-zA-Z0-9.-]/g, '_')
+        
+        const blob = await upload(`course-images/${cleanFileName}`, imageFile, {
+          access: 'public',
+          handleUploadUrl: '/api/upload-pdf/token',
+        })
+        
+        imageUrl = blob.url
         console.log("[v0] Image uploaded:", imageUrl)
       }
 
@@ -320,16 +322,13 @@ export default function AdminCursosPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="pdf">Upload PDF (máx 50MB) *</Label>
+                <Label htmlFor="pdf">Upload PDF (máx 500MB) *</Label>
                 <Input
                   id="pdf"
                   type="file"
                   accept=".pdf"
                   onChange={(e) => setPdfFile(e.target.files?.[0] || null)}
                 />
-                <p className="text-xs text-muted-foreground">
-                  Para PDFs maiores, divida em partes de até 50MB cada
-                </p>
               </div>
 
               <div className="space-y-2">
