@@ -1,40 +1,27 @@
-export const runtime = 'nodejs'
+export const runtime = 'edge'
 
 import { handleUpload, type HandleUploadBody } from "@vercel/blob/client"
 import { NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
 
 export async function POST(request: Request): Promise<NextResponse> {
-  const body = (await request.json()) as HandleUploadBody
-
+  console.log("[v0] Token route called")
+  
   try {
-    // Check authentication and admin status
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    
-    if (!user) {
-      return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
-    }
-
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("is_admin")
-      .eq("id", user.id)
-      .single()
-
-    if (!profile?.is_admin) {
-      return NextResponse.json({ error: "Acesso negado" }, { status: 403 })
-    }
+    const body = (await request.json()) as HandleUploadBody
+    console.log("[v0] Request body type:", body.type)
 
     const jsonResponse = await handleUpload({
       body,
       request,
       onBeforeGenerateToken: async (pathname) => {
+        console.log("[v0] Generating token for:", pathname)
+        
         // Validate file type based on pathname
         const isPdf = pathname.toLowerCase().endsWith('.pdf')
         const isImage = /\.(jpg|jpeg|png|webp|gif)$/i.test(pathname)
         
         if (!isPdf && !isImage) {
+          console.log("[v0] Invalid file type for:", pathname)
           throw new Error('Tipo de arquivo não permitido')
         }
 
@@ -46,13 +33,14 @@ export async function POST(request: Request): Promise<NextResponse> {
         }
       },
       onUploadCompleted: async ({ blob }) => {
-        console.log('Upload completed:', blob.url)
+        console.log('[v0] Upload completed:', blob.url)
       },
     })
 
+    console.log("[v0] Token response:", JSON.stringify(jsonResponse))
     return NextResponse.json(jsonResponse)
   } catch (error) {
-    console.error('Error handling upload:', error)
+    console.error('[v0] Error handling upload:', error)
     return NextResponse.json(
       { error: (error as Error).message },
       { status: 400 }

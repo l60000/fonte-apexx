@@ -110,31 +110,49 @@ export default function AdminCursosPage() {
       if (pdfFile) {
         console.log("[v0] Uploading PDF:", pdfFile.name, "Size:", pdfFile.size, "bytes")
         
-        // Clean filename for better compatibility
-        const cleanFileName = pdfFile.name.replace(/[^a-zA-Z0-9.-]/g, '_')
-        
-        const blob = await upload(`course-pdfs/${cleanFileName}`, pdfFile, {
-          access: 'public',
-          handleUploadUrl: '/api/upload-pdf/token',
-        })
-        
-        pdfUrl = blob.url
-        console.log("[v0] PDF uploaded:", pdfUrl)
+        try {
+          // Clean filename for better compatibility
+          const cleanFileName = pdfFile.name.replace(/[^a-zA-Z0-9.-]/g, '_')
+          const timestamp = Date.now()
+          const pathname = `course-pdfs/${timestamp}-${cleanFileName}`
+          
+          console.log("[v0] Starting client upload to:", pathname)
+          
+          const blob = await upload(pathname, pdfFile, {
+            access: 'public',
+            handleUploadUrl: '/api/upload-pdf/token',
+          })
+          
+          pdfUrl = blob.url
+          console.log("[v0] PDF uploaded successfully:", pdfUrl)
+        } catch (uploadError: any) {
+          console.error("[v0] PDF upload error:", uploadError)
+          throw new Error(`Erro ao fazer upload do PDF: ${uploadError.message || 'Erro desconhecido'}`)
+        }
       }
 
       // Upload image via client-side upload
       if (imageFile) {
         console.log("[v0] Uploading image:", imageFile.name)
         
-        const cleanFileName = imageFile.name.replace(/[^a-zA-Z0-9.-]/g, '_')
-        
-        const blob = await upload(`course-images/${cleanFileName}`, imageFile, {
-          access: 'public',
-          handleUploadUrl: '/api/upload-pdf/token',
-        })
-        
-        imageUrl = blob.url
-        console.log("[v0] Image uploaded:", imageUrl)
+        try {
+          const cleanFileName = imageFile.name.replace(/[^a-zA-Z0-9.-]/g, '_')
+          const timestamp = Date.now()
+          const pathname = `course-images/${timestamp}-${cleanFileName}`
+          
+          console.log("[v0] Starting image upload to:", pathname)
+          
+          const blob = await upload(pathname, imageFile, {
+            access: 'public',
+            handleUploadUrl: '/api/upload-pdf/token',
+          })
+          
+          imageUrl = blob.url
+          console.log("[v0] Image uploaded successfully:", imageUrl)
+        } catch (uploadError: any) {
+          console.error("[v0] Image upload error:", uploadError)
+          throw new Error(`Erro ao fazer upload da imagem: ${uploadError.message || 'Erro desconhecido'}`)
+        }
       }
 
       const courseData = {
