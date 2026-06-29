@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
+import { upload } from "@vercel/blob/client"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -178,16 +179,15 @@ export default function PDFManagerPage() {
     try {
       console.log("[v0] Starting PDF upload, file size:", file.size)
 
-      // Step 1: Upload via server route (Blob token stays server-side)
-      const fd = new FormData()
-      fd.append("file", file)
-      const uploadRes = await fetch("/api/upload-pdf", { method: "POST", body: fd })
-      if (!uploadRes.ok) {
-        const txt = await uploadRes.text()
-        throw new Error(`Erro ao fazer upload: ${txt}`)
-      }
-      const uploadData = await uploadRes.json()
-      const newPdfUrl = uploadData.url
+      // Step 1: Upload via client-side upload (supports large files up to 500MB)
+      const cleanFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_')
+      
+      const blob = await upload(`course-pdfs/${cleanFileName}`, file, {
+        access: 'public',
+        handleUploadUrl: '/api/upload-pdf/token',
+      })
+      
+      const newPdfUrl = blob.url
       console.log("[v0] Upload complete, blob URL:", newPdfUrl)
 
       // Step 2: Merge with existing PDF on server via pdf-operations
